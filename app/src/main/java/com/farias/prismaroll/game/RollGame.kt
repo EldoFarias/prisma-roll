@@ -196,8 +196,8 @@ class RollGame(private val callbacks: Callbacks) {
         camS += (sim.s - camS) * min(1f, dt * 14f)
         camX += (sim.x * 0.65f - camX) * k
         val falling = !sim.grounded && sim.y < sim.lastGroundY - 1.5f
-        val ty = if (falling) camY else sim.y
-        camY += (ty - camY) * min(1f, dt * (if (sim.grounded) 5f else 2.5f))
+        val wantY = if (falling) camY else sim.y
+        camY += (wantY - camY) * min(1f, dt * (if (sim.grounded) 5f else 2.5f))
         shake *= exp(-dt * 9f)
         boostFx += ((if (sim.boosted && !sim.dead) 1f else 0f) - boostFx) * min(1f, dt * 4f)
 
