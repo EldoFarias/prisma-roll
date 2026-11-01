@@ -152,6 +152,7 @@
     <string name="trail_rainbow">Arcoíris</string>
     <string name="try_skin">Probar</string>
     <string name="trial_started">¡Skin desbloqueada por %1$d partidas!</string>
+    <string name="mech_bank">Pista inclinada: la bola se desliza hacia el lado bajo, ¡sujétala con el dedo!</string>
     <string name="mech_boost">¡Los turbos aceleran la bola un rato!</string>
     <string name="mech_jump">Los trampolines lanzan la bola sobre el hueco: ¡apunta a la pista al caer!</string>
     <string name="mech_slider">Los bloques se deslizan por la pista: ¡espera el hueco!</string>

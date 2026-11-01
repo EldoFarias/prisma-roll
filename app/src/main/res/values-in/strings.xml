@@ -152,6 +152,7 @@
     <string name="trail_rainbow">Pelangi</string>
     <string name="try_skin">Coba</string>
     <string name="trial_started">Skin terbuka untuk %1$d permainan!</string>
+    <string name="mech_bank">Lintasan miring: bola meluncur ke sisi rendah, tahan dengan jarimu!</string>
     <string name="mech_boost">Turbo membuat bola lebih cepat sebentar!</string>
     <string name="mech_jump">Pad lompat melontarkan bola melewati celah: mendarat di lintasan!</string>
     <string name="mech_slider">Balok bergeser di lintasan: tunggu celahnya!</string>

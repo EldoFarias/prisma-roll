@@ -153,6 +153,7 @@
     <string name="trail_rainbow">Rainbow</string>
     <string name="try_skin">Try it</string>
     <string name="trial_started">Skin unlocked for %1$d games!</string>
+    <string name="mech_bank">Tilted track: the ball slides to the low side, hold it with your finger!</string>
     <string name="mech_boost">Speed pads make the ball go faster for a while!</string>
     <string name="mech_jump">Jump pads launch the ball over the gap: keep it on the track when it lands!</string>
     <string name="mech_slider">Blocks slide across the track: wait for the gap!</string>

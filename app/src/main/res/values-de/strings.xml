@@ -152,6 +152,7 @@
     <string name="trail_rainbow">Regenbogen</string>
     <string name="try_skin">Testen</string>
     <string name="trial_started">Skin für %1$d Spiele freigeschaltet!</string>
+    <string name="mech_bank">Schräge Strecke: Der Ball rutscht zur tiefen Seite, halt ihn mit dem Finger!</string>
     <string name="mech_boost">Turbos machen den Ball eine Weile schneller!</string>
     <string name="mech_jump">Sprungfelder schleudern den Ball über die Lücke: lande auf der Strecke!</string>
     <string name="mech_slider">Blöcke gleiten über die Strecke: warte auf die Lücke!</string>

@@ -316,7 +316,27 @@ fun Logo(modifier: Modifier = Modifier, intro: Boolean = false) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text("PRISMA", style = Styles.gradient(54))
-        Text("TOWER", style = Styles.glow(26, Color.White, FontWeight.Black).copy(letterSpacing = 12.sp))
+        RollWord(28)
+    }
+}
+
+/** "ROLL" with a glossy rolling ball as its O: the game's mark. */
+@Composable
+fun RollWord(sizeSp: Int, modifier: Modifier = Modifier) {
+    val t = androidx.compose.animation.core.rememberInfiniteTransition(label = "roll")
+    val spin = t.animateFloat(
+        0f, 6.2832f,
+        androidx.compose.animation.core.infiniteRepeatable(tween(1400, easing = androidx.compose.animation.core.LinearEasing)),
+        label = "spin",
+    )
+    val style = Styles.glow(sizeSp, Color.White, FontWeight.Black).copy(letterSpacing = (sizeSp * 0.3f).sp)
+    Row(modifier, verticalAlignment = Alignment.CenterVertically) {
+        Text("R", style = style)
+        androidx.compose.foundation.Canvas(Modifier.padding(horizontal = (sizeSp * 0.12f).dp).size((sizeSp * 0.95f).dp)) {
+            // The spin value is read only here: the ball redraws, nothing recomposes.
+            drawBall(center, size.minDimension / 2f, spin.value)
+        }
+        Text("LL", style = style)
     }
 }
 

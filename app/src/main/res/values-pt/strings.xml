@@ -152,6 +152,7 @@
     <string name="trail_rainbow">Arco-íris</string>
     <string name="try_skin">Testar</string>
     <string name="trial_started">Skin liberada por %1$d partidas!</string>
+    <string name="mech_bank">Pista inclinada: a bola escorrega para o lado mais baixo, segure com o dedo!</string>
     <string name="mech_boost">Turbos deixam a bola mais rápida por um tempo!</string>
     <string name="mech_jump">Trampolins lançam a bola sobre o vão: mire na pista para cair!</string>
     <string name="mech_slider">Blocos deslizam pela pista: espere a passagem abrir!</string>

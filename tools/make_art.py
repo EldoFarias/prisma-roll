@@ -1,7 +1,7 @@
 """Prisma Roll art: launcher icons (all densities + adaptive), Play Store icon and feature graphic.
 
 python3 tools/make_art.py <project_root>
-Everything is drawn here (pseudo-3D helix tower), supersampled for smooth edges.
+Everything is drawn here (a glowing track in perspective with the ball), supersampled for smooth edges.
 """
 import math, os, sys
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
@@ -152,13 +152,74 @@ def orb(img, cx, cy, r, light, dark):
     img.paste(o, (int(cx - size / 2), int(cy - size / 2)), mask)
 
 
+TRACK_A = (34, 211, 238)
+TRACK_B = (129, 140, 248)
+RIM = (232, 121, 249)
+
+
+def track(img, cx, top_y, bottom_y, half_bottom, half_top, ball=True, curve=0.0):
+    """A track in perspective: tiles from the bottom (near) to the top (far), neon edges, the ball near."""
+    w, h = img.size
+    d = ImageDraw.Draw(img)
+    n = 14
+    def row(t):
+        # t = 0 near, 1 far; perspective spacing.
+        k = (1 - t) ** 2.2
+        y = top_y + (bottom_y - top_y) * k
+        half = half_top + (half_bottom - half_top) * k
+        x = cx + curve * (t ** 2) * half_bottom * 1.6
+        return x, y, half
+    # Underside glow
+    glow(img, cx, bottom_y, half_bottom * 1.1, RIM, 0.35)
+    for i in range(n):
+        x0, y0, h0 = row(i / n)
+        x1, y1, h1 = row((i + 1) / n)
+        col = TRACK_A if i % 2 == 0 else TRACK_B
+        shade = 0.85 + 0.15 * (1 - i / n)
+        c = tuple(int(v * shade) for v in col)
+        d.polygon([(x0 - h0, y0), (x0 + h0, y0), (x1 + h1, y1), (x1 - h1, y1)], fill=c + (255,))
+        # side faces (thickness)
+        th = max(1.0, (y0 - y1) * 0.35 + h0 * 0.06)
+        side = lerp(col, (10, 6, 30), 0.55)
+        d.polygon([(x0 - h0, y0), (x1 - h1, y1), (x1 - h1, y1 + th * 0.6), (x0 - h0, y0 + th)], fill=side + (255,))
+        d.polygon([(x0 + h0, y0), (x1 + h1, y1), (x1 + h1, y1 + th * 0.6), (x0 + h0, y0 + th)], fill=side + (255,))
+        # glossy band
+        d.line([(x0 - h0 * 0.7, y0 - (y0 - y1) * 0.25), (x0 + h0 * 0.7, y0 - (y0 - y1) * 0.25)], fill=(255, 255, 255, 60), width=max(1, int((y0 - y1) * 0.1)))
+    # Neon edges
+    for side in (-1, 1):
+        pts = [(row(i / n)[0] + side * row(i / n)[2], row(i / n)[1]) for i in range(n + 1)]
+        lay = Image.new("RGBA", img.size, (0, 0, 0, 0))
+        ImageDraw.Draw(lay).line(pts, fill=RIM + (255,), width=max(2, int(half_bottom * 0.06)))
+        img.alpha_composite(lay.filter(ImageFilter.GaussianBlur(half_bottom * 0.03)))
+        ImageDraw.Draw(img).line(pts, fill=(255, 235, 255, 255), width=max(1, int(half_bottom * 0.025)))
+    # A red block and coins further on
+    bx, by, bh = row(0.55)
+    bw = bh * 0.55
+    d = ImageDraw.Draw(img)
+    d.rectangle([bx + bh * 0.2, by - bw * 0.9, bx + bh * 0.2 + bw, by], fill=(244, 63, 94, 255))
+    d.rectangle([bx + bh * 0.2, by - bw * 0.9, bx + bh * 0.2 + bw, by - bw * 0.75], fill=(255, 140, 160, 255))
+    for k, t in enumerate((0.3, 0.4, 0.48)):
+        x, y, hh = row(t)
+        r = hh * 0.13
+        glow(img, x - hh * 0.35, y - r * 1.6, r * 2.2, (255, 210, 80), 0.5)
+        ImageDraw.Draw(img).ellipse([x - hh * 0.35 - r * 0.6, y - r * 2.6, x - hh * 0.35 + r * 0.6, y - r * 0.6], fill=(255, 205, 60, 255))
+    if ball:
+        x, y, hh = row(0.06)
+        br = half_bottom * 0.32
+        by = y - br * 0.95
+        for k in range(8, 0, -1):
+            glow(img, x, by + k * br * 0.32, br * (1 - k / 11), (244, 114, 182), 0.3 * (1 - k / 9))
+        glow(img, x, by, br * 2.6, RIM, 0.5)
+        ImageDraw.Draw(img).ellipse([x - br * 1.1, y - br * 0.2, x + br * 1.1, y + br * 0.25], fill=(0, 0, 0, 55))
+        orb(img, x, by, br, (255, 255, 255), (232, 121, 249))
+
+
 def icon_scene(S, fg_only=False):
     img = Image.new("RGBA", (S, S), (0, 0, 0, 0)) if fg_only else sky(S, S)
-    # Adaptive icons crop to the inner ~66%: keep the tower smaller there.
-    unit = S * (0.2 if fg_only else 0.29)
-    # Tower height ≈ finial (1.1 u) + 3 rings (2.2 u spacing + ring) — centre it.
-    top = S * 0.5 - unit * 0.42
-    tower(img, S / 2, top, unit, rings=3)
+    # Adaptive icons crop to the inner ~66%: keep the drawing smaller there.
+    k = 0.72 if fg_only else 1.0
+    cy = S * 0.5
+    track(img, S / 2, cy - S * 0.3 * k, cy + S * 0.36 * k, S * 0.3 * k, S * 0.04 * k)
     return img
 
 
@@ -197,13 +258,13 @@ for i in range(18):
     cd.ellipse([x - 160, H * 0.8 - 60, x + 160, H * 0.8 + 70], fill=(235, 225, 255, 150))
 fgx.alpha_composite(cloud.filter(ImageFilter.GaussianBlur(30)))
 mountains(fgx, H * 0.97, (30, 20, 70, 255), H * 0.14, 6, 2.2)
-tower(fgx, W * 0.74, H * 0.3, H * 0.27, rings=3)
+track(fgx, W * 0.74, H * 0.18, H * 1.02, H * 0.42, H * 0.05, curve=-0.25)
 t = Image.new("RGBA", (W, H), (0, 0, 0, 0))
 td = ImageDraw.Draw(t)
 f1 = ImageFont.truetype(FONT, 210)
 f2 = ImageFont.truetype(FONT, 120)
 td.text((110, 250), "PRISMA", font=f1, fill=(255, 255, 255, 255))
-td.text((118, 500), "T O W E R", font=f2, fill=(255, 255, 255, 255))
+td.text((118, 500), "R O L L", font=f2, fill=(255, 255, 255, 255))
 gp = Image.new("RGB", (W, 1))
 for x in range(W):
     gp.putpixel((x, 0), lerp((34, 211, 238), (232, 121, 249), min(1, x / (W * 0.45))))

@@ -152,6 +152,7 @@
     <string name="trail_rainbow">Gökkuşağı</string>
     <string name="try_skin">Dene</string>
     <string name="trial_started">Görünüm %1$d oyun için açıldı!</string>
+    <string name="mech_bank">Eğimli pist: top alçak tarafa kayar, parmağınla tut!</string>
     <string name="mech_boost">Turbolar topu bir süre hızlandırır!</string>
     <string name="mech_jump">Zıplama pedleri topu boşluğun üstünden fırlatır: piste in!</string>
     <string name="mech_slider">Bloklar pistte kayar: boşluğu bekle!</string>

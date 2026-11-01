@@ -152,6 +152,7 @@
     <string name="trail_rainbow">इंद्रधनुष</string>
     <string name="try_skin">आज़माएं</string>
     <string name="trial_started">%1$d गेम के लिए स्किन खुली!</string>
+    <string name="mech_bank">झुका ट्रैक: गेंद नीचे की तरफ़ फिसलती है, उंगली से संभालें!</string>
     <string name="mech_boost">टर्बो गेंद को कुछ देर तेज़ कर देते हैं!</string>
     <string name="mech_jump">जंप पैड गेंद को गड्ढे के ऊपर उछालते हैं: ट्रैक पर उतरें!</string>
     <string name="mech_slider">ब्लॉक ट्रैक पर सरकते हैं: रास्ता खुलने का इंतज़ार करें!</string>

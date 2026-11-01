@@ -81,7 +81,7 @@ import kotlin.math.roundToInt
 import kotlin.math.sin
 
 /** How far the ball moves sideways when the finger crosses the whole screen width (world units). */
-private const val STEER_PER_WIDTH = 7.5f
+private const val STEER_PER_WIDTH = 5f
 
 @Composable
 fun GameScreen(host: GameHost, ads: AdsManager, sound: SoundManager, onGreatMoment: () -> Unit, onHome: () -> Unit) {

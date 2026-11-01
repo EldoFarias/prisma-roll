@@ -92,7 +92,7 @@ class Mesh(data: MeshData) {
     }
 
     /**
-     * Points attributes 3, 4 and 5 (three vec4) at [instVbo] from instance [first]: the layout of the
+     * Points attributes 3, 4, 5 and 6 (four vec4) at [instVbo] from instance [first]: the layout of the
      * track boxes (see Shaders.TRACK_VS).
      */
     fun bindBoxInstances(instVbo: Int, first: Int) {
@@ -100,7 +100,7 @@ class Mesh(data: MeshData) {
         GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, instVbo)
         val stride = BOX_FLOATS * 4
         val base = first * stride
-        for (a in 0..2) {
+        for (a in 0..3) {
             GLES30.glEnableVertexAttribArray(3 + a)
             GLES30.glVertexAttribPointer(3 + a, 4, GLES30.GL_FLOAT, false, stride, base + a * 16)
             GLES30.glVertexAttribDivisor(3 + a, 1)
@@ -115,7 +115,7 @@ class Mesh(data: MeshData) {
 
     companion object {
         const val INST_FLOATS = 7
-        const val BOX_FLOATS = 12
+        const val BOX_FLOATS = 16
     }
 }
 

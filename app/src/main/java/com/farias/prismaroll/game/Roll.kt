@@ -42,10 +42,15 @@ class Seg(
     val kind: Int = SegKind.NORMAL,
     /** Colour variant for the renderer (0/1 alternate, 2 = accent). */
     val tone: Int = 0,
+    /** Sideways tilt: height gained per unit to the right (the ball drifts to the low side). */
+    val bank: Float = 0f,
 ) {
     val s1 get() = s0 + len
     fun cx(s: Float) = x0 + (x1 - x0) * ((s - s0) / len)
+    /** Top at the centre line. */
     fun top(s: Float) = h0 + (h1 - h0) * ((s - s0) / len)
+    /** Top under (s, x), with the tilt. */
+    fun topAt(s: Float, x: Float) = top(s) + bank * (x - cx(s))
     val slope get() = (h1 - h0) / len
     val slant get() = (x1 - x0) / len
 }
@@ -141,6 +146,7 @@ class RollLevel(
         for (g in segs) when (g.kind) {
             SegKind.JUMP -> m.add("jump"); SegKind.BOOST -> m.add("boost"); SegKind.STONE -> m.add("stones")
         }
+        if (segs.any { it.bank != 0f }) m.add("bank")
         m
     }
 
@@ -183,7 +189,7 @@ class RollLevel(
             val g = segs[i]
             if (g.s0 < s - maxLen) break
             if (s <= g.s1 && abs(x - g.cx(s)) <= g.w / 2f) {
-                if (best == null || g.top(s) > best.top(s)) best = g
+                if (best == null || g.topAt(s, x) > best.topAt(s, x)) best = g
             }
             i--
         }
@@ -197,14 +203,16 @@ object Roll {
     /** Track slab thickness (for drawing and side hits). */
     const val THICK = 0.55f
     /** Fastest the ball can move sideways (units/s), chasing the finger. */
-    const val LAT_MAX = 11f
+    const val LAT_MAX = 13f
     /** Sideways speed the safe line never needs more than (comfortable for a person). */
-    const val HUMAN_LAT = 5.5f
+    const val HUMAN_LAT = 6f
+    /** Sideways drift speed per unit of bank on tilted track (units/s). */
+    const val DRIFT = 11f
     const val JUMP_V = 11.5f
     const val BOOST_MUL = 1.32f
     const val BOOST_LEN = 32f
     /** Below the last ground by this much = fell off. */
-    const val FALL_DEPTH = 6f
+    const val FALL_DEPTH = 10f
     /** Highest step the ball rolls down without taking off; landings this far below the top still count. */
     const val SNAP = 0.4f
 }
@@ -304,11 +312,17 @@ class RollSim(val level: RollLevel) {
         val g = lv.support(s, x)
         val bottom = y - Roll.BALL_R
         if (g != null) {
-            val top = g.top(s)
+            val top = g.topAt(s, x)
             if (grounded) {
                 if (bottom <= top + Roll.SNAP && bottom >= top - Roll.SNAP) {
                     y = top + Roll.BALL_R
                     vy = g.slope * vz
+                    // Tilted track: the ball slides to the low side (the finger has to hold it).
+                    if (g.bank != 0f) {
+                        val drift = -g.bank * Roll.DRIFT * dt
+                        x += drift
+                        targetX += drift
+                    }
                     onGround(g, ev)
                 } else if (bottom < top - Roll.SNAP) {
                     crash(-1, ev); return
@@ -441,7 +455,7 @@ class RollSim(val level: RollLevel) {
         x = level.path(rs)
         targetX = x
         val g = level.support(rs, x)
-        y = (g?.top(rs) ?: lastGroundY) + Roll.BALL_R
+        y = (g?.topAt(rs, x) ?: lastGroundY) + Roll.BALL_R
         lastGroundY = y - Roll.BALL_R
         vy = 0f
         vz = level.speed
@@ -475,12 +489,12 @@ object RollLevels {
 
     fun isBoss(n: Int): Boolean = n >= 10 && n % 10 == 0
 
-    fun speedFor(n: Int, d: Float) = 9.5f + 4.5f * d + if (isBoss(n)) 0.6f else 0f
+    fun speedFor(n: Int, d: Float) = 13f + 5f * d + if (isBoss(n)) 0.8f else 0f
 
     fun lengthFor(n: Int): Float = when {
-        n <= 2 -> 150f
-        isBoss(n) -> min(260f + n * 3.2f, 720f)
-        else -> min(170f + n * 2.6f, 560f)
+        n <= 2 -> 520f
+        isBoss(n) -> min(780f + n * 10f, 1900f)
+        else -> min(600f + n * 8f, 1500f)
     }
 
     // First level each mechanic can appear in.
@@ -496,6 +510,8 @@ object RollLevels {
     const val SPINNER_FROM = 22
     const val HAMMER_FROM = 26
     const val GATE_FROM = 32
+    const val STAIRS_FROM = 3
+    const val BANK_FROM = 7
 
     const val TIME_STEP = 0.5f
 
@@ -507,11 +523,11 @@ object RollLevels {
         val b = Builder(1, 0.15f, Random(seed), speedFor(30, 0.3f), endless = true)
         b.start()
         var n = 4
-        while (b.s < 2600f) {
+        while (b.s < 4200f) {
             b.d = difficulty(n)
             b.n = n
             b.chunk()
-            if (b.s > n * 30f) n += 2
+            if (b.s > n * 45f) n += 2
         }
         b.finish()
         val lv = b.build(0, false, true)
@@ -594,8 +610,8 @@ object RollLevels {
         /** Sideways distance the safe line may move over [len] units of track. */
         fun reach(len: Float) = len * Roll.HUMAN_LAT / (speed * Roll.BOOST_MUL)
 
-        fun seg(len: Float, x1: Float = c, h1: Float = h, ww: Float = w, kind: Int = SegKind.NORMAL) {
-            segs.add(Seg(s, len, c, x1, ww, h, h1, kind, if (kind == SegKind.NORMAL) tone else 2))
+        fun seg(len: Float, x1: Float = c, h1: Float = h, ww: Float = w, kind: Int = SegKind.NORMAL, bank: Float = 0f) {
+            segs.add(Seg(s, len, c, x1, ww, h, h1, kind, if (kind == SegKind.NORMAL) tone else 2, bank))
             tone = 1 - tone
         }
 
@@ -621,8 +637,9 @@ object RollLevels {
 
         fun coinsAlong(len: Float, from: Float = s, every: Float = 1.7f) {
             var k = from + 1f
+            val g = segs.last()
             while (k < from + len - 0.5f) {
-                obs.add(Obs(ObsKind.COIN, x, k, h + 0.55f, 0.5f, 0.5f, 0.5f))
+                obs.add(Obs(ObsKind.COIN, x, k, (if (k in g.s0..g.s1) g.top(k) else h) + 0.55f, 0.5f, 0.5f, 0.5f))
                 k += every
             }
         }
@@ -631,7 +648,10 @@ object RollLevels {
             // The safe line may drift to a new spot on the track (and collect a coin line there).
             val room = (w / 2f - 0.7f).coerceAtLeast(0f)
             val nx = (c + (rnd.nextFloat() * 2f - 1f) * room).let { x + (it - x).coerceIn(-reach(len * 0.6f), reach(len * 0.6f)) }
-            seg(len)
+            // Most of the way goes gently downhill.
+            val dh = if (rnd.nextFloat() < 0.55f) -len * (0.06f + 0.08f * rnd.nextFloat()) else 0f
+            seg(len, h1 = h + dh)
+            h += dh
             point(s + len * 0.15f, x)
             x = nx
             point(s + len * 0.45f, x)
@@ -644,7 +664,10 @@ object RollLevels {
             val r = rnd.nextFloat()
             val options = ArrayList<Int>()
             options.add(0); options.add(1)
-            if (n >= RAMPS_FROM) options.add(2)
+            options.add(14) // drop to a lower platform
+            if (n >= RAMPS_FROM) { options.add(2); options.add(14) }
+            if (n >= STAIRS_FROM) options.add(15)
+            if (n >= BANK_FROM) { options.add(16); if (d > 0.25f) options.add(16) }
             if (n >= BLOCKS_FROM) { options.add(3); options.add(3) }
             if (n >= GAPS_FROM) options.add(4)
             if (n >= BOOST_FROM && lastKind != 5) options.add(5)
@@ -678,6 +701,9 @@ object RollLevels {
                 11 -> spinner()
                 12 -> hammers()
                 13 -> gates()
+                14 -> drop()
+                15 -> stairs()
+                16 -> banked()
             }
             // A breather between harder pieces.
             if (k >= 3 && rnd.nextFloat() < 0.7f - d * 0.4f) straight(5f + rnd.nextFloat() * 5f)
@@ -688,7 +714,9 @@ object RollLevels {
             val len = 10f + rnd.nextFloat() * 10f
             val dx = (rnd.nextFloat() * 2f - 1f) * min(reach(len) * 0.9f, 4f)
             point(s, x)
-            seg(len, x1 = c + dx)
+            val dh = if (rnd.nextFloat() < 0.6f) -len * (0.08f + 0.1f * rnd.nextFloat()) else 0f
+            seg(len, x1 = c + dx, h1 = h + dh)
+            h += dh
             c += dx
             x += dx
             coinsAlongSlant(len, dx)
@@ -700,16 +728,72 @@ object RollLevels {
             if (rnd.nextFloat() > 0.5f) return
             var k = 1.5f
             while (k < len - 1f) {
-                obs.add(Obs(ObsKind.COIN, x - dx + dx * (k / len), s + k, h + 0.55f, 0.5f, 0.5f, 0.5f))
+                obs.add(Obs(ObsKind.COIN, x - dx + dx * (k / len), s + k, segs.last().top(s + k) + 0.55f, 0.5f, 0.5f, 0.5f))
                 k += 1.8f
             }
         }
 
+        /**
+         * The track ends and the ball flies down onto a lower platform. [run] = flat-ish run-up length.
+         * Returns false (nothing built) never; always lands within reach of the safe line.
+         */
+        fun drop(run: Float = 5f + rnd.nextFloat() * 4f, depth: Float = 2f + rnd.nextFloat() * (2f + 3f * d), landLen: Float = 8f + rnd.nextFloat() * 5f) {
+            // Run-up going slightly down, so the ball leaves the edge with a little downward speed.
+            val k = -0.12f
+            seg(run, h1 = h + k * run, ww = max(w, 3.2f))
+            h += k * run
+            s += run
+            point(s, x)
+            val vy0 = k * speed
+            val t = (vy0 + sqrt(vy0 * vy0 + 2f * Roll.GRAVITY * depth)) / Roll.GRAVITY
+            val dist = speed * t
+            // Land well inside the next platform: a gap of 30–55% of the flight, the rest over the platform.
+            val gap = dist * (0.3f + 0.25f * d)
+            val shift = (rnd.nextFloat() * 2f - 1f) * min(reach(dist) * 0.7f, 2f)
+            s += gap
+            h -= depth
+            c += shift
+            x += shift
+            point(s + dist * 0.5f, x)
+            val save = w
+            w = max(w, 3.4f)
+            seg(landLen + dist * 0.5f)
+            w = save
+            s += landLen + dist * 0.5f
+            point(s, x)
+        }
+
+        /** Several drops in a row, like stairs down through the clouds. */
+        fun stairs() {
+            val steps = 2 + (rnd.nextFloat() * (2f + 2f * d)).toInt()
+            for (i in 0 until steps) drop(run = 3f + rnd.nextFloat() * 2f, depth = 1.6f + rnd.nextFloat() * (1.5f + 1.5f * d), landLen = 4f + rnd.nextFloat() * 3f)
+        }
+
+        /** A tilted stretch: the ball keeps sliding to the low side. */
+        fun banked() {
+            val len = 14f + rnd.nextFloat() * 12f
+            val save = w
+            w = max(w, 4f)
+            // Never steeper than a small step at the edges (entering from flat track stays smooth).
+            val b = min(0.12f + 0.12f * d + rnd.nextFloat() * 0.06f, 0.33f / (w / 2f)) * (if (rnd.nextBoolean()) 1f else -1f)
+            val dh = -len * (0.05f + 0.08f * rnd.nextFloat())
+            val dx = (rnd.nextFloat() * 2f - 1f) * min(reach(len) * 0.6f, 2.5f)
+            point(s, x)
+            seg(len, x1 = c + dx, h1 = h + dh, bank = b)
+            h += dh
+            c += dx
+            x = c
+            w = save
+            s += len
+            point(s, x)
+        }
+
         /** Up or down a slope (a hop at the top when steep). */
         fun ramp() {
-            val len = 8f + rnd.nextFloat() * 6f
-            val up = h < 6f && (h < -6f || rnd.nextBoolean())
-            val dh = (if (up) 1f else -1f) * (1f + rnd.nextFloat() * (1.2f + 1.6f * d))
+            val len = 8f + rnd.nextFloat() * 8f
+            // Mostly down: the whole run is a descent through the sky.
+            val up = rnd.nextFloat() < 0.25f
+            val dh = (if (up) 1f else -1.6f) * (1f + rnd.nextFloat() * (1.2f + 1.6f * d))
             point(s, x)
             seg(len, h1 = h + dh)
             h += dh

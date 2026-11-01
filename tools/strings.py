@@ -252,6 +252,7 @@ for _l, _kv in NEW.items():
 
 ROLL = {
 "en": {
+    'mech_bank': 'Tilted track: the ball slides to the low side, hold it with your finger!',
     'towers': 'Tracks',
     'percent_done': '%1$d%% of the track',
     'drag_hint': 'Slide your finger to steer the ball',
@@ -284,6 +285,7 @@ ROLL = {
     'tap_to_roll': 'Touch to roll',
 },
 "pt": {
+    'mech_bank': 'Pista inclinada: a bola escorrega para o lado mais baixo, segure com o dedo!',
     'towers': 'Pistas',
     'percent_done': '%1$d%% da pista',
     'drag_hint': 'Deslize o dedo para guiar a bola',
@@ -316,6 +318,7 @@ ROLL = {
     'tap_to_roll': 'Toque para rolar',
 },
 "es": {
+    'mech_bank': 'Pista inclinada: la bola se desliza hacia el lado bajo, ¡sujétala con el dedo!',
     'towers': 'Pistas',
     'percent_done': '%1$d%% de la pista',
     'drag_hint': 'Desliza el dedo para guiar la bola',
@@ -348,6 +351,7 @@ ROLL = {
     'tap_to_roll': 'Toca para rodar',
 },
 "fr": {
+    'mech_bank': 'Piste penchée : la balle glisse vers le côté bas, retiens-la avec le doigt !',
     'towers': 'Pistes',
     'percent_done': '%1$d%% de la piste',
     'drag_hint': 'Glisse le doigt pour diriger la balle',
@@ -380,6 +384,7 @@ ROLL = {
     'tap_to_roll': 'Touche pour rouler',
 },
 "de": {
+    'mech_bank': 'Schräge Strecke: Der Ball rutscht zur tiefen Seite, halt ihn mit dem Finger!',
     'towers': 'Strecken',
     'percent_done': '%1$d%% der Strecke',
     'drag_hint': 'Wisch zur Seite, um den Ball zu lenken',
@@ -412,6 +417,7 @@ ROLL = {
     'tap_to_roll': 'Tippen zum Rollen',
 },
 "tr": {
+    'mech_bank': 'Eğimli pist: top alçak tarafa kayar, parmağınla tut!',
     'towers': 'Pistler',
     'percent_done': 'Pistin %%%1$d kadarı',
     'drag_hint': 'Topu yönlendirmek için parmağını kaydır',
@@ -444,6 +450,7 @@ ROLL = {
     'tap_to_roll': 'Yuvarlanmak için dokun',
 },
 "in": {
+    'mech_bank': 'Lintasan miring: bola meluncur ke sisi rendah, tahan dengan jarimu!',
     'towers': 'Lintasan',
     'percent_done': '%1$d%% lintasan',
     'drag_hint': 'Geser jari untuk mengarahkan bola',
@@ -476,6 +483,7 @@ ROLL = {
     'tap_to_roll': 'Sentuh untuk menggelinding',
 },
 "hi": {
+    'mech_bank': 'झुका ट्रैक: गेंद नीचे की तरफ़ फिसलती है, उंगली से संभालें!',
     'towers': 'ट्रैक',
     'percent_done': 'ट्रैक का %1$d%%',
     'drag_hint': 'गेंद चलाने के लिए उंगली सरकाएँ',

@@ -53,6 +53,7 @@ layout(location=2) in vec2 aUv;
 layout(location=3) in vec4 aA;   // centre xyz, width
 layout(location=4) in vec4 aB;   // thickness, length, slant (dx/ds), slope (dy/ds)
 layout(location=5) in vec4 aC;   // colour rgb, kind
+layout(location=6) in vec4 aD;   // bank (dy/dx), unused
 uniform mat4 uVP;
 out vec3 vWorld;
 out vec3 vNormal;
@@ -62,7 +63,7 @@ out vec3 vInstColor;
 out float vExtra;
 void main() {
     float len = aB.y;
-    vec3 X = vec3(aA.w, 0.0, 0.0);
+    vec3 X = vec3(aA.w, aD.x * aA.w, 0.0);
     vec3 Y = vec3(0.0, aB.x, 0.0);
     vec3 Z = vec3(aB.z * len, aB.w * len, -len);
     vec3 w = aA.xyz + X * aPos.x + Y * aPos.y + Z * aPos.z;
@@ -193,6 +194,10 @@ void main() {
     vec3 emis = uEmissive;
     float gloss = uGloss;
     float metal = uMetal;
+    // How much rim light (fresnel) and specular a surface gets: big flat tops seen at grazing angles
+    // would otherwise turn milky white.
+    float rimK = 0.55;
+    float specK = 1.0;
 
 #ifdef V_RING
     if (uKind == 3) {
@@ -217,26 +222,34 @@ void main() {
         float sPos = -vWorld.z;
         if (k <= 2 || k == 13) {
             // Track: glossy tiles on top with glowing side edges; darker glassy sides.
+            vec3 tint = base;
             if (topF) {
-                vec2 g = vec2(vWorld.x * 0.9, sPos * 0.9);
+                // Dark glossy glass tiles with glowing seams in the track colour.
+                vec2 g = vec2(vWorld.x * 0.8, sPos * 0.8);
                 vec2 f = abs(fract(g) - 0.5);
-                float grout = max(ss(0.46, 0.5, f.x), ss(0.46, 0.5, f.y));
+                float grout = max(ss(0.44, 0.5, f.x), ss(0.44, 0.5, f.y));
                 float h = hash(floor(g));
-                base = mix(base * (0.9 + 0.18 * h), base * 0.62, grout * 0.7);
-                if (k == 13) base = mix(base, base * 1.25, ss(0.35, 0.0, length(vLocal.xz)));
-                float edge = ss(0.22, 0.0, vUv.x);
-                emis += uRim * edge * 1.1 + uRim * ss(0.12, 0.0, vUv.y) * 0.5;
-                // A slow light sweep running along the track.
-                emis += base * 0.18 * pow(0.5 + 0.5 * sin(sPos * 0.25 - uTime * 3.0), 8.0);
-                gloss = 80.0;
+                base = tint * (0.38 + 0.14 * h);
+                if (k == 13) base = tint * (0.55 + 0.25 * ss(0.4, 0.0, length(vLocal.xz)));
+                emis += tint * grout * 0.55;
+                // Glowing side rails and end lines.
+                float edge = ss(0.2, 0.0, vUv.x);
+                emis += uRim * edge * 1.5 + tint * ss(0.1, 0.0, vUv.y) * 0.6;
+                // A light sweep running along the track.
+                emis += tint * 0.35 * pow(0.5 + 0.5 * sin(sPos * 0.2 - uTime * 4.0), 10.0);
+                gloss = 90.0;
+                rimK = 0.05;
+                specK = 0.5;
             } else if (botF) {
-                base *= 0.25;
-                emis += uRim * 0.04;
+                base = tint * 0.12;
+                emis += tint * 0.06;
+                rimK = 0.1;
             } else {
-                base *= mix(0.32, 0.75, vLocal.y + 0.5);
-                emis += uRim * ss(0.14, 0.0, 0.5 - vLocal.y) * 0.75;
-                emis += uRim * ss(0.06, 0.0, abs(vLocal.y + 0.15)) * 0.15;
+                base = tint * mix(0.12, 0.42, vLocal.y + 0.5);
+                emis += uRim * ss(0.16, 0.0, 0.5 - vLocal.y) * 0.9;
+                emis += tint * ss(0.05, 0.0, abs(vLocal.y + 0.1)) * 0.5;
                 gloss = 120.0;
+                rimK = 0.2;
             }
         } else if (k == 10) {
             // Speed pad: chevrons racing forward.
@@ -518,7 +531,7 @@ void main() {
     vec3 H = normalize(L + V);
     float diff = max(dot(N, L), 0.0);
     vec3 amb = mix(uGround, uSky, N.y * 0.5 + 0.5);
-    float spec = pow(max(dot(N, H), 0.0), gloss) * (0.45 + 0.55 * metal + gloss / 300.0);
+    float spec = pow(max(dot(N, H), 0.0), gloss) * (0.45 + 0.55 * metal + gloss / 300.0) * specK;
     float fres = pow(1.0 - max(dot(N, V), 0.0), 3.0);
     vec3 R = reflect(-V, N);
     vec3 env = mix(uGround * 0.6, uSky * 1.6 + vec3(0.25), ss(-0.4, 0.8, R.y));
@@ -527,7 +540,7 @@ void main() {
     // Soft secondary light from below (bounce light from the colourful floor).
     col += base * uRim * max(-N.y, 0.0) * 0.18;
     col += vec3(spec) * mix(vec3(1.0), base + 0.3, metal);
-    col += uRim * fres * 0.55;
+    col += uRim * fres * rimK;
     col += emis;
 
     float dist = length(uCam - vWorld);

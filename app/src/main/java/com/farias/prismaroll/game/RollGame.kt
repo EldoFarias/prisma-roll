@@ -53,6 +53,9 @@ class RollGame(private val callbacks: Callbacks) {
         private set
     var shake = 0f
         private set
+    /** Camera lean (radians) on tilted track. */
+    var camRoll = 0f
+        private set
     /** Extra field of view while boosting (0..1). */
     var boostFx = 0f
         private set
@@ -199,6 +202,9 @@ class RollGame(private val callbacks: Callbacks) {
         val wantY = if (falling) camY else sim.y
         camY += (wantY - camY) * min(1f, dt * (if (sim.grounded) 5f else 2.5f))
         shake *= exp(-dt * 9f)
+        val under = if (sim.grounded) sim.level.support(sim.s, sim.x) else null
+        val wantRoll = if (under != null) -under.bank * 0.9f else camRoll * 0.98f
+        camRoll += (wantRoll - camRoll) * min(1f, dt * 3f)
         boostFx += ((if (sim.boosted && !sim.dead) 1f else 0f) - boostFx) * min(1f, dt * 4f)
 
         // Trail

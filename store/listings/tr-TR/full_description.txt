@@ -1,32 +1,32 @@
-Kuleyi parmağınla çevir ve zıplayan topu halka halka altın hedefe kadar indir. Üst üste 3 halkadan geç, top alev alsın ve yolundaki her şeyi kırsın! Prisma Roll hızlı, güzel ve bağımlılık yapan bir 3D oyun: başlaması kolay, bırakması zor.
+Parmağını kaydır ve topu gökyüzünde süzülen pistlerde yönlendir. Bloklardan, çekiçlerden ve dönen çubuklardan kaç, turbolar ve zıplama pedleriyle boşlukların üstünden atla ve düşmeden bitiş çizgisine ulaş! Prisma Roll hızlı, güzel ve bağımlılık yapan bir 3D oyun: başlaması kolay, bırakması zor.
 
 ★ NASIL OYNANIR
-• Kuleyi çevirmek için sürükle
-• Boşluklardan düş, kırmızı kısımlardan kaçın
-• Sekmeden üst üste 3 halka = alev modu, kırmızıyı bile kırar
+• Yuvarlanmak için dokun, yönlendirmek için sağa sola kaydır
+• Pistten düşme ve engellere çarpma
+• Kıl payı geç, ağır çekimde ekstra puan kazan
 
-★ SONSUZ BÖLÜMLER
-• Her bölüm farklı ve hepsi geçilebilir
-• Her 10 bölümde bir patron kule: daha yüksek, daha zor, üç kat ödül
-• Yolculuğunu takip etmek için dünya haritası
-• Yeni engeller: çatlayıp kırılan cam, kaybolan halkalar, iki kat atlatan portallar, dönen halkalar
-• Yolda süzülen altınlar
+★ SONSUZ BÖLÜM
+• Her bölüm farklı ve hepsinin çözümü var
+• Her 10 bölümde bir patron pist: daha uzun, daha hızlı, üç kat ödül
+• Her dünyada yeni engeller: rampalar, boşluklar, dar köprüler, basamak taşları, kayan bloklar, çekiçler, dönen çubuklar ve inip kalkan duvarlar
+• Pistte uçmak için turbolar ve zıplama pedleri
+• Yol boyunca altınlar
 
-★ SERBEST DÜŞÜŞ
-• Sonsuz mod: ne kadar derine inebilirsin?
+★ SONSUZ MOD
+• Hiç bitmeyen bir pist: ne kadar uzağa yuvarlanabilirsin?
 • Her oyunda rekorunu kır
 
-★ HER GÜN YENİ BİR ŞEY
+★ HER GÜN YENİLİK
 • Herkes için aynı günlük görev
 • Günlük şans çarkı
 • Günde üç görev ve 7 günlük sandık
 • Ödüllü 20'den fazla başarım
 
 ★ PREMIUM GÖRÜNÜM
-• Kendi dünyası olan 13 kule: karlı zirveler, neon şehir, volkan, uzay, çöl, kale ve daha fazlası
-• İnciden kroma, Dünya'dan galaksiye ve mücevhere 23 top
+• Kendi dünyası olan 13 pist teması: neon şehir, okyanus, volkan, uzay, çöl, kale ve daha fazlası
+• İnci ve kromdan Dünya gezegeni, galaksi ve mücevhere 23 top
 • Özel izler: gökkuşağı, yıldızlar, mavi ateş ve altın tozu
-• Parçacıklar, tehlikeli anlarda ağır çekim, her temaya özel müzik
+• Kıymıklar, kıvılcımlar, ağır çekim ve temaya özel müzik
 • Hafif ve akıcı, internetsiz çalışır
 
 Ücretsiz, reklamlı. Hesap gerekmez.

@@ -152,6 +152,7 @@
     <string name="trail_rainbow">Arc-en-ciel</string>
     <string name="try_skin">Essayer</string>
     <string name="trial_started">Skin débloqué pour %1$d parties !</string>
+    <string name="mech_bank">Piste penchée : la balle glisse vers le côté bas, retiens-la avec le doigt !</string>
     <string name="mech_boost">Les turbos accélèrent la balle un moment !</string>
     <string name="mech_jump">Les tremplins lancent la balle au-dessus du vide : vise la piste pour retomber !</string>
     <string name="mech_slider">Des blocs glissent sur la piste : attends le passage !</string>

@@ -101,7 +101,7 @@ class RollRenderer(private val game: RollGame) : GLSurfaceView.Renderer {
     private lateinit var boxBuf: FloatBuffer
     private var boxCount = 0
     // Glowing pads (additive pass), same layout.
-    private val glowData = FloatArray(64 * Mesh.BOX_FLOATS)
+    private val glowData = FloatArray(420 * Mesh.BOX_FLOATS)
     private var glowCount = 0
 
     // Scratch colours (no allocations while drawing)
@@ -138,10 +138,12 @@ class RollRenderer(private val game: RollGame) : GLSurfaceView.Renderer {
     private fun cacheLook(t: TowerLook) {
         if (lookCached === t) return
         lookCached = t
-        mixInto(cSky, t.bgTop, white, 0.55f)
+        // Ambient light tinted by the theme (a white sky made everything milky).
+        mixInto(cSky, t.bgTop, t.aurora[1], 0.45f)
+        for (k in 0..2) cSky[k] = (cSky[k] * 1.6f + 0.12f).coerceAtMost(1f)
         mixInto(cGround, t.bgBottom, t.aurora[0], 0.4f)
-        mixInto(cFog, t.bgBottom, t.bgTop, 0.45f)
-        mixInto(cFog, cFog, t.env.cloud, 0.3f)
+        mixInto(cFog, t.bgBottom, t.bgTop, 0.5f)
+        mixInto(cFog, cFog, t.aurora[0], 0.15f)
         mixInto(cCloudLight, t.env.cloud, white, 0.25f)
         mixInto(cCloudShade, t.env.cloud, t.bgBottom, 0.35f)
         mixInto(stoneC, t.ringB, white, 0.15f)
@@ -255,18 +257,21 @@ class RollRenderer(private val game: RollGame) : GLSurfaceView.Renderer {
         // Camera: behind and above the ball, looking down the track; wider while boosting.
         val hfov = 46f + 7f * game.boostFx
         val vfov = Math.toDegrees(2.0 * atan(tan(Math.toRadians(hfov / 2.0)) / aspect)).toFloat().coerceIn(48f, 84f)
-        Matrix.perspectiveM(proj, 0, vfov, aspect, 0.4f, 140f)
+        Matrix.perspectiveM(proj, 0, vfov, aspect, 0.4f, 170f)
         val sh = game.shake
         val shx = sh * sin(time * 61f) * 0.5f
         val shy = sh * sin(time * 47f + 1f) * 0.35f
         val cz = -game.camS
         eye[0] = game.camX + shx; eye[1] = game.camY + 3.3f + shy; eye[2] = cz + 7.6f
-        Matrix.setLookAtM(view, 0, eye[0], eye[1], eye[2], game.camX * 0.9f + shx * 0.5f, game.camY + 0.1f, cz - 9f, 0f, 1f, 0f)
+        // The camera leans with tilted track.
+        val roll = game.camRoll
+        Matrix.setLookAtM(view, 0, eye[0], eye[1], eye[2], game.camX * 0.9f + shx * 0.5f, game.camY + 0.1f, cz - 9f, sin(roll), cos(roll), 0f)
         Matrix.multiplyMM(vp, 0, proj, 0, view, 0)
 
         GLES30.glClearColor(t.bgBottom[0], t.bgBottom[1], t.bgBottom[2], 1f)
         GLES30.glClear(GLES30.GL_COLOR_BUFFER_BIT or GLES30.GL_DEPTH_BUFFER_BIT)
-        val prog = (0.42f - game.camY / 40f).coerceIn(0f, 1f)
+        // The land below rises as the level goes on: the descent is felt.
+        val prog = (0.12f + 0.75f * sim.progress).coerceIn(0f, 1f)
         if (rich) drawBackground(t, time, prog) else drawSky(t, time)
 
         frameTime = time
@@ -389,7 +394,7 @@ class RollRenderer(private val game: RollGame) : GLSurfaceView.Renderer {
         if (!dead || sim.fell) {
             val g = lv.support(sim.s, sim.x)
             if (g != null) {
-                val top = g.top(sim.s)
+                val top = g.topAt(sim.s, sim.x)
                 val hgt = (sim.y - Roll.BALL_R - top).coerceAtLeast(0f)
                 if (hgt < 8f) {
                     GLES30.glEnable(GLES30.GL_POLYGON_OFFSET_FILL)
@@ -458,7 +463,14 @@ class RollRenderer(private val game: RollGame) : GLSurfaceView.Renderer {
             SegKind.STONE -> { col = stoneC; kind = K_STONE }
             else -> { col = if (g.tone == 0) t.ringA else trackB; kind = K_TRACK }
         }
-        addBox(cx, top - th / 2f, midS, g.w, th, g.len, g.slant, g.slope, col, kind)
+        addBox(cx, top - th / 2f, midS, g.w, th, g.len, g.slant, g.slope, col, kind, g.bank)
+        // Neon rails along both edges (additive glow).
+        if (g.kind == SegKind.NORMAL || g.kind == SegKind.STONE) {
+            for (e in 0..1) {
+                val side = if (e == 0) -1f else 1f
+                addGlow(cx + side * g.w / 2f, top + 0.03f + side * g.bank * g.w / 2f, midS, 0.16f, 0.12f, g.len * 0.98f, t.rim, g.slant, g.slope)
+            }
+        }
         when (g.kind) {
             SegKind.BOOST, SegKind.JUMP -> addGlow(cx, top + 0.02f, midS, g.w, 0.06f, g.len, col)
             SegKind.FINISH -> {
@@ -474,21 +486,22 @@ class RollRenderer(private val game: RollGame) : GLSurfaceView.Renderer {
         }
     }
 
-    private fun addBox(x: Float, y: Float, s: Float, w: Float, h: Float, len: Float, slant: Float, slope: Float, c: FloatArray, kind: Float) {
+    private fun addBox(x: Float, y: Float, s: Float, w: Float, h: Float, len: Float, slant: Float, slope: Float, c: FloatArray, kind: Float, bank: Float = 0f) {
         if (boxCount >= MAX_BOXES) return
-        putBox(boxData, boxCount++, x, y, s, w, h, len, slant, slope, c, kind)
+        putBox(boxData, boxCount++, x, y, s, w, h, len, slant, slope, c, kind, bank)
     }
 
-    private fun addGlow(x: Float, y: Float, s: Float, w: Float, h: Float, len: Float, c: FloatArray) {
+    private fun addGlow(x: Float, y: Float, s: Float, w: Float, h: Float, len: Float, c: FloatArray, slant: Float = 0f, slope: Float = 0f) {
         if (glowCount >= glowData.size / Mesh.BOX_FLOATS) return
-        putBox(glowData, glowCount++, x, y, s, w * 1.04f, h, len * 1.04f, 0f, 0f, c, 0f)
+        putBox(glowData, glowCount++, x, y, s, w * 1.04f, h, len * 1.04f, slant, slope, c, 0f, 0f)
     }
 
-    private fun putBox(a: FloatArray, slot: Int, x: Float, y: Float, s: Float, w: Float, h: Float, len: Float, slant: Float, slope: Float, c: FloatArray, kind: Float) {
+    private fun putBox(a: FloatArray, slot: Int, x: Float, y: Float, s: Float, w: Float, h: Float, len: Float, slant: Float, slope: Float, c: FloatArray, kind: Float, bank: Float) {
         var k = slot * Mesh.BOX_FLOATS
         a[k++] = x; a[k++] = y; a[k++] = -s; a[k++] = w
         a[k++] = h; a[k++] = len; a[k++] = slant; a[k++] = slope
-        a[k++] = c[0]; a[k++] = c[1]; a[k++] = c[2]; a[k] = kind
+        a[k++] = c[0]; a[k++] = c[1]; a[k++] = c[2]; a[k++] = kind
+        a[k++] = bank; a[k++] = 0f; a[k++] = 0f; a[k] = 0f
     }
 
     private fun uploadBoxes(src: FloatArray, count: Int) {
@@ -532,7 +545,7 @@ class RollRenderer(private val game: RollGame) : GLSurfaceView.Renderer {
         p.v3("uGround", cGround)
         p.v3("uRim", frameLook.rim)
         p.v3("uFog", cFog)
-        p.v2("uFogRange", 42f, 100f)
+        p.v2("uFogRange", 60f, 150f)
         p.f("uTime", frameTime)
         p.f("uSpacing", 3f)
         p.f("uAlpha", 1f)
@@ -626,14 +639,14 @@ class RollRenderer(private val game: RollGame) : GLSurfaceView.Renderer {
         for (j in j0..j1) {
             val s = j * step + h(j, 1) * 3f
             val side = if (h(j, 2) < 0.5f) -1f else 1f
-            val below = h(j, 3) < 0.6f
+            val below = h(j, 3) < 0.85f
             val x = game.camX + side * (if (below) 2f + h(j, 4) * 9f else 9f + h(j, 4) * 10f) + sin(time * 0.08f + j) * 0.8f
             val y = game.camY + (if (below) -5f - h(j, 5) * 9f else -2f + h(j, 5) * 7f)
             val z = -s
             val sc = 2.8f + h(j, 6) * 3.5f
             val dx = x - eye[0]; val dy = y - eye[1]; val dz = z - eye[2]
             val dist = sqrt(dx * dx + dy * dy + dz * dz)
-            val f = ((dist - 20f) / 60f).coerceIn(0f, 0.85f)
+            val f = (0.35f + (dist - 20f) / 60f).coerceIn(0.35f, 0.9f)
             Matrix.setIdentityM(model, 0)
             Matrix.translateM(model, 0, x, y, z)
             Matrix.rotateM(model, 0, -90f, 1f, 0f, 0f)
@@ -641,7 +654,7 @@ class RollRenderer(private val game: RollGame) : GLSurfaceView.Renderer {
             cloudProg.m4("uModel", model)
             cloudProg.v3("uColor", mixInto(cloudA, cCloudLight, cFog, f))
             cloudProg.v3("uColor2", mixInto(cloudB, cCloudShade, cFog, f))
-            cloudProg.f("uAlpha", (if (space) 0.35f else 0.8f) * (1f - f * 0.6f))
+            cloudProg.f("uAlpha", (if (space) 0.25f else 0.5f) * (1f - f * 0.5f))
             cloudProg.f("uSeed", h(j, 7) * 10f)
             disc.draw()
         }

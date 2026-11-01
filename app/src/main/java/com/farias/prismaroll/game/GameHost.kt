@@ -211,7 +211,7 @@ class GameHost(context: Context) : RollGame.Callbacks {
             return true
         }
         notice = 0
-        first("boost", R.string.mech_boost) || first("jump", R.string.mech_jump) || first("slider", R.string.mech_slider) ||
+        first("bank", R.string.mech_bank) || first("boost", R.string.mech_boost) || first("jump", R.string.mech_jump) || first("slider", R.string.mech_slider) ||
             first("stones", R.string.mech_stones) || first("spinner", R.string.mech_spinner) || first("hammer", R.string.mech_hammer) ||
             first("gate", R.string.mech_gate)
         phase = Phase.PLAYING
