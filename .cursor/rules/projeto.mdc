@@ -1,0 +1,7 @@
+---
+description: Contexto do projeto Prisma Roll (bola rolando numa pista no céu, 3D)
+alwaysApply: true
+---
+Antes de qualquer tarefa, leia @CLAUDE.md na raiz do repositório: ele descreve a arquitetura,
+como compilar e instalar no celular, as convenções (textos em 8 idiomas) e as pendências atuais.
+Responda em português.

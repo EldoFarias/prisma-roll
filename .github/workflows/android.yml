@@ -1,0 +1,85 @@
+name: Build Android
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-build
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    env:
+      VERSION_CODE: ${{ github.run_number }}
+      HAS_KEYSTORE: ${{ secrets.KEYSTORE_BASE64 != '' }}
+      # Optional: your real AdMob ids as repository secrets (release builds only).
+      ADMOB_APP_ID: ${{ secrets.ADMOB_APP_ID }}
+      ADMOB_BANNER_ID: ${{ secrets.ADMOB_BANNER_ID }}
+      ADMOB_INTERSTITIAL_ID: ${{ secrets.ADMOB_INTERSTITIAL_ID }}
+      ADMOB_REWARDED_ID: ${{ secrets.ADMOB_REWARDED_ID }}
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Check Android SDK
+        run: echo "ANDROID_HOME=$ANDROID_HOME" && ls "$ANDROID_HOME/platforms" | tail -3
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build test APK (debug, test ads)
+        run: |
+          chmod +x gradlew
+          set -o pipefail
+          if ! ./gradlew --no-daemon assembleDebug 2>&1 | tee build.log; then
+            # Surface compiler / build errors as annotations (readable via the API).
+            grep -E "^e: |error:|What went wrong|> .*(failed|Could not|not found)" build.log | head -40 | while IFS= read -r line; do
+              echo "::error::${line}"
+            done
+            exit 1
+          fi
+          cp app/build/outputs/apk/debug/app-debug.apk PrismaRoll-teste.apk
+
+      - name: Publish test APK (easy download on the phone)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: teste
+          name: "APK de teste (build ${{ github.run_number }})"
+          body: |
+            Baixe **PrismaRoll-teste.apk** no celular e instale.
+            Build ${{ github.run_number }} — commit ${{ github.sha }}.
+            Esta versão usa anúncios de TESTE do Google.
+          prerelease: true
+          make_latest: false
+          files: PrismaRoll-teste.apk
+
+      - name: Decode keystore
+        if: env.HAS_KEYSTORE == 'true'
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/upload.jks"
+          echo "KEYSTORE_PATH=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+
+      - name: Build release AAB (for Play Store)
+        if: env.HAS_KEYSTORE == 'true'
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./gradlew --no-daemon bundleRelease
+
+      - name: Upload AAB
+        if: env.HAS_KEYSTORE == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: PrismaRoll-release-aab
+          path: app/build/outputs/bundle/release/app-release.aab
