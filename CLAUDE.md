@@ -25,7 +25,7 @@ sem outras redes, sem assinatura, sem compras no app.
 ## Regras do jogo (`game/Roll.kt`, puro Kotlin, testável na JVM)
 
 - A pista avança pela distância `s`; no mundo 3D o ponto (x, y, s) fica em (x, y, −s). A bola anda sozinha
-  (`RollLevel.speed`, 9,5→14 u/s) e o dedo só move o alvo lateral (`RollSim.targetX`); a bola persegue o alvo a no
+  (`RollLevel.speed`, 13→19 u/s) e o dedo só move o alvo lateral (`RollSim.targetX`); a bola persegue o alvo a no
   máximo `Roll.LAT_MAX`. Gravidade `Roll.GRAVITY`, passos de 1/120 s.
 - Pista = lista de `Seg` (trecho reto de `s0` a `s0+len`, centro `x0→x1` (diagonal), altura `h0→h1` (rampa), largura
   `w`, tipo `SegKind`: normal, turbo, trampolim, chegada, pedra). Sem pista embaixo = cai; cair `Roll.FALL_DEPTH`
@@ -39,7 +39,11 @@ sem outras redes, sem assinatura, sem compras no app.
   lateral. Obstáculos móveis recebem a fase do movimento que deixa a linha segura livre na hora em que a bola passa
   (`timeTable`, `clearFor`). Depois o `RollBot` (segue a linha segura) joga a fase inteira; só fica a fase que ele
   vence → toda fase tem solução.
-- Mecânicas a partir da fase (`RollLevels.*_FROM`): rampas 2, blocos 2, vãos 4, turbo 5, ponte 6, muro 8,
+- A pista desce: retas e diagonais em leve descida, rampas quase sempre para baixo, **quedas** (`drop`: a pista acaba
+  e a bola cai numa plataforma mais baixa) e **escadas** de quedas (`stairs`). **Pista inclinada** (`Seg.bank`,
+  `banked`): a bola escorrega para o lado baixo (`Roll.DRIFT`, move também o alvo do dedo) e a câmera inclina junto.
+- Fases longas: `lengthFor` 520 u na fase 1 até 1500 (chefe até 1900) ≈ 40–100 s.
+- Mecânicas a partir da fase (`RollLevels.*_FROM`): escadas 3, inclinada 7, rampas 2, blocos 2, vãos 4, turbo 5, ponte 6, muro 8,
   deslizantes 10, pedras 14, trampolim 18, giratória 22, martelos 26, muros que sobem 32. Aviso na 1ª vez (`notice`).
 - Pista chefe a cada 10 fases (`isBoss`): mais longa e difícil, prêmio ×3. `daily(dia)` igual para todos no dia.
   Sem fim (`endless(seed)`): ~2600 u de pedaços de dificuldade crescente; recorde em metros (`Progress.bestEndless`).
@@ -58,6 +62,7 @@ sem outras redes, sem assinatura, sem compras no app.
 | `gl/RollRenderer.kt` | Desenho: céu (do Tower), pista e obstáculos em **uma** chamada instanciada de caixas (`Shaders.TRACK_VS`, 12 floats por caixa: centro, largura, espessura, comprimento, diagonal, rampa, cor, tipo), barras/martelos com matriz, bola, moedas, sombra, nuvens, brilhos aditivos, partículas. |
 | `gl/Shaders.kt` | GLSL ES 3.0. Variante `V_TRACK` do shader iluminado: azulejos e bordas neon da pista, turbo com setas, trampolim, chegada xadrez, obstáculos com listras, metal, colunas. Use `ss()` em vez de `smoothstep`. |
 | `gl/Looks.kt` | Os 13 temas de pista (ainda `TowerLook`: céu, cores da pista `ringA/ringB`, perigo `danger`, borda `rim`, cenário) e 23 bolas. |
+| `ui/SplashScreen.kt` | Abertura própria: pista neon acende do horizonte, a bola desce rolando, salta e vira o "O" de ROLL (`RollWord`, `drawBall`, também no logo da Home). |
 | `ui/` | Igual ao Tower: Splash, Home (sobre a demo), Game (HUD, deslizar, escudo, avisos, pausa/derrota/vitória), Shop, Map, Extras, Stats, Rewards, Dialogs. |
 | `data/`, `ads/`, `audio/` | Progresso, missões, conquistas, rastros; AdMob + UMP; sons, música e vibração (como no Tower). |
 
@@ -81,6 +86,8 @@ sem outras redes, sem assinatura, sem compras no app.
 
 ## Pendências
 
-1. Eldo testar no celular: sensação do deslizar (`STEER_PER_WIDTH` em `GameScreen.kt`), câmera, velocidade, dificuldade.
+1. Eldo testar no celular: deslizar (`STEER_PER_WIDTH` = 5 em `GameScreen.kt`, era 7,5 e ficou sensível), velocidade,
+   visual (era esbranquiçado: luz ambiente e névoa agora tingidas pelo tema, `rimK`/`specK` baixos no topo da pista,
+   trilhos neon aditivos), dificuldade das fases longas.
 2. Ícone, arte e textos da loja próprios do Prisma Roll; prints.
 3. Publicação: keystore + secrets `KEYSTORE_*`, app e blocos no AdMob + secrets `ADMOB_*`, Play Console (`store/PUBLICAR.md`).
